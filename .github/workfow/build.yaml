@@ -1,0 +1,25 @@
+name: CI
+# https://github.com/actions/virtual-environments
+on:
+  push:
+    branches: [ dual-stack ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          export TAG=`git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8`
+          ./scripts/package
+          docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}" mtr.external.otc.telekomcloud.com
+          docker images
+          #docker tag manager:${TAG}-dirty mcsps/cloud:1.22
+          #docker push 
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
