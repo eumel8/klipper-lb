@@ -3,22 +3,22 @@ set -e -x
 
 trap exit TERM INT
 
-if echo ${DEST_IP} | grep -Eq ":" 
+if echo ${DEST_IP6} | grep -Eq ":" 
 then
     echo 1 > /proc/sys/net/ipv6/conf/all/forwarding || true
     if [ `cat /proc/sys/net/ipv6/conf/all/forwarding` != 1 ]; then
         exit 1
     fi
-    ip6tables -t nat -I PREROUTING ! -s ${DEST_IP}/64 -p ${DEST_PROTO} --dport ${SRC_PORT} -j DNAT --to [${DEST_IP}]:${DEST_PORT}
-    ip6tables -t nat -I POSTROUTING -d ${DEST_IP}/64 -p ${DEST_PROTO} -j MASQUERADE
-else
-    echo 1 > /proc/sys/net/ipv4/ip_forward || true
-    if [ `cat /proc/sys/net/ipv4/ip_forward` != 1 ]; then
-        exit 1
-    fi
-    iptables -t nat -I PREROUTING ! -s ${DEST_IP}/32 -p ${DEST_PROTO} --dport ${SRC_PORT} -j DNAT --to ${DEST_IP}:${DEST_PORT}
-    iptables -t nat -I POSTROUTING -d ${DEST_IP}/32 -p ${DEST_PROTO} -j MASQUERADE
+    ip6tables -t nat -I PREROUTING ! -s ${DEST_IP6}/128 -p ${DEST_PROTO} --dport ${SRC_PORT} -j DNAT --to [${DEST_IP6}]:${DEST_PORT}
+    ip6tables -t nat -I POSTROUTING -d ${DEST_IP6}/128 -p ${DEST_PROTO} -j MASQUERADE
 fi
+
+echo 1 > /proc/sys/net/ipv4/ip_forward || true
+if [ `cat /proc/sys/net/ipv4/ip_forward` != 1 ]; then
+    exit 1
+fi
+iptables -t nat -I PREROUTING ! -s ${DEST_IP}/32 -p ${DEST_PROTO} --dport ${SRC_PORT} -j DNAT --to ${DEST_IP}:${DEST_PORT}
+iptables -t nat -I POSTROUTING -d ${DEST_IP}/32 -p ${DEST_PROTO} -j MASQUERADE
 
 if [ ! -e /pause ]; then
     mkfifo /pause
